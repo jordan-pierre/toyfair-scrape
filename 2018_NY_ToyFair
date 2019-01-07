@@ -1,0 +1,39 @@
+import requests
+import re
+import pandas as pd
+
+def main():
+    """
+    Program gets every exhibitor at the 2018 NY Toy Fair and creates a csv file with a link to that name
+    on Google and Amazon by scraping the dynamic floor plan website for the exhibitor name tags using regex
+    and adding search links to both Amazon and Google so they are immediately clickable when research is done
+    in Excel.
+    """
+    url = 'https://s23.a2zinc.net/clients/tia/toyfair2018/public/EventMap.aspx?shMode=E&ID=2931'
+
+    page = requests.get(url).text
+
+    data = []
+    data.append(['Name', 'Google', 'Amazon'])
+
+    identifier = "exhibitorName"
+    for line in page.splitlines():
+        if identifier in line:
+            try:
+                regex = 'href="(.+?)">(.+?)<'
+                name = re.search(regex, line).group(2)
+                if '&amp;' in name:
+                    name = name.replace('&amp;', '&')
+                google = '=HYPERLINK("https://www.google.com/search?q={}")'.format(name.replace(' ','+'))
+                amazon = '=HYPERLINK("https://www.amazon.com/s/field-keywords={}")'.format(name.replace(' ','+'))
+                data.append([name, google, amazon])
+            except:
+                pass
+
+    df = pd.DataFrame(data)
+
+    out_name = "2018_ToyFair.csv"
+    df.to_csv(out_name)
+
+if __name__ == '__main__':
+    main()
