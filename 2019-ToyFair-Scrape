@@ -1,0 +1,43 @@
+import requests
+import re
+from bs4 import BeautifulSoup
+
+def main():
+    # Read text HTML file of toy fair exhibitors
+    print("Opening NY Toy Fair file...")
+    with open('2019-NY-Toy-Fair-HTML.txt', 'r') as file:
+        list_html = file.read()
+
+    # Store IDs as a list and URLs as a set
+    exhIDs = list(set(re.findall(r'ExhID=(\d*)', list_html)))
+    exhURLs = set()
+
+    # Scrape the company website from the company profile page
+    print("Getting URLs...")
+    for id in exhIDs:
+        exh_page_url = "https://toyfair2019.mapyourshow.com/7_0/exhibitor/exhibitor-details.cfm?ExhID=" + id
+        exh_page_response = requests.get(exh_page_url)
+        exh_page_url = BeautifulSoup(exh_page_response.content, "html.parser")
+        class_section = exh_page_url.find_all("p", {"class": "sc-Exhibitor_Url"})[0]
+        # not all pages have exhibitor's URL
+        try:
+            exh_url = re.search(r'href="(.*?)"', str(class_section)).group(1)
+        except:
+            pass
+        # Add URL to set (prevents duplicates)
+        exhURLs.add(exh_url)
+
+    # Convert set of URLs to a list
+    exhURLs = list(exhURLs)
+    print("Finished collecting URLs.  Writing to text file...")
+
+    # Write URLs to a text file
+    file_out = "2019_Exhibitors.txt"
+    with open(file_out, "w") as file:
+        for url in exhURLs:
+            file.write(url + '\n')
+    print("Done.  File name is " + file_out)
+
+
+if __name__ == '__main__':
+    main()
